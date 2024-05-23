@@ -31,12 +31,12 @@ def transform(extracted_data):
     return extracted_data
 
 def create_staging_tb():
-    create_tb_query = """
+    create_query = """
         CREATE TABLE IF NOT EXISTS staging_titanic (
             passenger_id INTEGER NOT NULL,
             is_survived INTEGER,
             ticket_class INTEGER,
-            name VARCHAR(255),
+            name VARCHAR(150),
             gender VARCHAR(10),
             age INTEGER,
             no_of_sibling_or_spouse INTEGER,
@@ -45,14 +45,14 @@ def create_staging_tb():
             fare NUMERIC,
             cabin_number VARCHAR(50),
             port_of_embarked VARCHAR(10),
-            name_title TEXT,
-            name_first_name TEXT,
-            name_last_name TEXT,
+            name_title VARCHAR(10),
+            name_first_name VARCHAR(50),
+            name_last_name VARCHAR(50),
             PRIMARY KEY (passenger_id)
         );
     """
 
-    cur.execute(create_tb_query)
+    cur.execute(create_query)
     conn.commit()
 
 def insert_staging_tb(extracted_data):
@@ -70,3 +70,43 @@ def insert_staging_tb(extracted_data):
         cur.execute(insert_query)
     conn.commit()
 
+def create_dim_passenger():
+    create_query = """
+        CREATE TABLE IF NOT EXISTS dim_passenger (
+            passenger_id INTEGER NOT NULL,
+            is_survived INTEGER,
+            name VARCHAR(150),
+            name_title VARCHAR(10),
+            name_first_name VARCHAR(50),
+            name_last_name VARCHAR(50),
+            gender VARCHAR(10),
+            age INTEGER,
+            no_of_sibling_or_spouse INTEGER,
+            no_of_parent_or_child INTEGER,
+            PRIMARY KEY (passenger_id)
+        );
+    """
+
+    cur.execute(create_query)
+    conn.commit()
+
+def insert_dim_passenger():
+    insert_query = """
+        INSERT INTO dim_passenger (passenger_id, is_survived, name, name_title, name_first_name, name_last_name, 
+            gender, age, no_of_sibling_or_spouse, no_of_parent_or_child)
+        SELECT passenger_id,
+               is_survived,
+               name,
+               name_title,
+               name_first_name,
+               name_last_name,
+               gender,
+               age,
+               no_of_sibling_or_spouse,
+               no_of_parent_or_child
+        FROM staging_titanic
+        ON CONFLICT (passenger_id) DO NOTHING;
+    """
+
+    cur.execute(insert_query)
+    conn.commit()
