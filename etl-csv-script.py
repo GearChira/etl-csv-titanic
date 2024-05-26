@@ -110,3 +110,38 @@ def insert_dim_passenger():
 
     cur.execute(insert_query)
     conn.commit()
+
+def create_fact_passenger():
+    create_query = """
+        CREATE TABLE IF NOT EXISTS fact_passenger (
+            passenger_id INTEGER NOT NULL,
+            ticket_class INTEGER,
+            ticket_detail VARCHAR(50),
+            fare NUMERIC,
+            cabin_number VARCHAR(50),
+            port_of_embarked VARCHAR(10),
+            passenger_dim_id INTEGER REFERENCE dim_passenger(passenger_id)
+            PRIMARY KEY (passenger_id)
+        );
+    """
+    cur.execute(create_query)
+    conn.commit()
+
+def insert_fact_passenger():
+    insert_query = """
+        INSERT INTO fact_passenger (passenger_id, ticket_class, ticket_detail, fare, cabin_number, port_of_embarked, 
+            passenger_dim_id)
+        SELECT passenger_id,
+               ticket_class,
+               ticket_detail,
+               fare,
+               cabin_number,
+               port_of_embarked,
+               passenger_id
+        FROM staging_titanic
+        ON CONFLICT (passenger_id) DO NOTHING;
+    """
+
+    cur.execute(insert_query)
+    conn.commit()
+
