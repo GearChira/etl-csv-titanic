@@ -1,9 +1,11 @@
 import pandas as pd
-import psycopg2 
+import psycopg2
+from datetime import datetime
 
 data = '/Users/chiranuvathn/Desktop/Development/etl-csv-titanic/train.csv'
 conn = psycopg2.connect("dbname=titanic user=postgres")
 cur = conn.cursor()
+log_file = '/Users/chiranuvathn/Desktop/Development/etl-csv-titanic/etl_titanic_log.txt'
 
 def extract(data):
     return pd.read_csv(data)
@@ -55,15 +57,14 @@ def create_staging_tb():
     cur.execute(create_query)
     conn.commit()
 
-def insert_staging_tb(extracted_data):
-    for i, row in extracted_data.iterrows():
+def insert_staging_tb(transformed_data):
+    for i, row in transformed_data.iterrows():
         insert_query = f"""
             INSERT INTO staging_titanic (passenger_id, is_survived, ticket_class, name, gender, age, no_of_sibling_or_spouse, 
                 no_of_parent_or_child, ticket_detail, fare, cabin_number, port_of_embarked, name_title, name_first_name, name_last_name)
-            VALUES ({row.passenger_id}, {row.is_survived}, {row.ticket_class}, '{row.name.replace("'", "''")}', '{row.gender}',
-                {row.age if not pd.isnull(row.age) else 'NULL'}, {row.no_of_sibling_or_spouse}, {row.no_of_parent_or_child},
-                '{row.ticket_detail.replace("'", "''")}', {row.fare}, '{row.cabin_number.replace("'", "''")}', 
-                '{row.point_of_embarked}', '{row.name_title}', '{row.name_first_name}', '{row.name_last_name}')
+            VALUES ({row.PassengerId}, {row.Survived}, {row.Pclass}, '{row.Name.replace("'", "''")}', '{row.Sex}',
+                {row.Age if not pd.isnull(row.Age) else 'NULL'}, {row.SibSp}, {row.Parch},'{row.Ticket.replace("'", "''")}', 
+                {row.Fare}, '{row.Cabin}', '{row.Embarked}', '{row.Title}', '{row.FirstName}', '{row.LastName}')
             ON CONFLICT (passenger_id) DO NOTHING;
         """
     
@@ -145,3 +146,9 @@ def insert_fact_passenger():
     cur.execute(insert_query)
     conn.commit()
 
+def logging(message):
+    time_format = '%Y-%m-%d %H:%M:%S'
+    time_now = datetime.now()
+    current_time = time_now.strftime(time_format)
+    with open(log_file, 'a') as f:
+        f.write(current_time + ': ' + message + '.' + '\n')
