@@ -11,20 +11,21 @@ def extract(data):
     return pd.read_csv(data)
 
 def transform(extracted_data):
-    name_parts = extracted_data['Name'].str.split()
-
     titles = []
     first_names = []
     last_names = []
 
-    for name in name_parts:
-        title = name[1].strip('.')
-        first_name = name[2]
-        last_name = name[0].strip(',')
-        
-        titles.append(title)
-        first_names.append(first_name)
-        last_names.append(last_name)
+    for name in extracted_data['Name']:
+        last_name, rest = name.split(',',1)
+        title, first_name = rest.split('.',1)
+
+        title_split = title.strip()
+        first_name_split = first_name.strip()
+        last_name_split = last_name.strip()
+
+        titles.append(title_split)
+        first_names.append(first_name_split)
+        last_names.append(last_name_split)
 
     extracted_data['Title'] = titles
     extracted_data['FirstName'] = first_names
@@ -71,84 +72,93 @@ def insert_staging_tb(transformed_data):
         cur.execute(insert_query)
     conn.commit()
 
-def create_dim_passenger():
-    create_query = """
-        CREATE TABLE IF NOT EXISTS dim_passenger (
-            passenger_id INTEGER NOT NULL,
-            is_survived INTEGER,
-            name VARCHAR(150),
-            name_title VARCHAR(10),
-            name_first_name VARCHAR(50),
-            name_last_name VARCHAR(50),
-            gender VARCHAR(10),
-            age INTEGER,
-            no_of_sibling_or_spouse INTEGER,
-            no_of_parent_or_child INTEGER,
-            PRIMARY KEY (passenger_id)
-        );
-    """
 
-    cur.execute(create_query)
-    conn.commit()
+etl_extracted_data = extract(data)
+etl_transformed_data = transform(etl_extracted_data)
 
-def insert_dim_passenger():
-    insert_query = """
-        INSERT INTO dim_passenger (passenger_id, is_survived, name, name_title, name_first_name, name_last_name, 
-            gender, age, no_of_sibling_or_spouse, no_of_parent_or_child)
-        SELECT passenger_id,
-               is_survived,
-               name,
-               name_title,
-               name_first_name,
-               name_last_name,
-               gender,
-               age,
-               no_of_sibling_or_spouse,
-               no_of_parent_or_child
-        FROM staging_titanic
-        ON CONFLICT (passenger_id) DO NOTHING;
-    """
+create_staging_tb()
+insert_staging_tb(etl_transformed_data)
+print('Process Ended')
 
-    cur.execute(insert_query)
-    conn.commit()
 
-def create_fact_passenger():
-    create_query = """
-        CREATE TABLE IF NOT EXISTS fact_passenger (
-            passenger_id INTEGER NOT NULL,
-            ticket_class INTEGER,
-            ticket_detail VARCHAR(50),
-            fare NUMERIC,
-            cabin_number VARCHAR(50),
-            port_of_embarked VARCHAR(10),
-            passenger_dim_id INTEGER REFERENCE dim_passenger(passenger_id)
-            PRIMARY KEY (passenger_id)
-        );
-    """
-    cur.execute(create_query)
-    conn.commit()
+# def create_dim_passenger():
+#     create_query = """
+#         CREATE TABLE IF NOT EXISTS dim_passenger (
+#             passenger_id INTEGER NOT NULL,
+#             is_survived INTEGER,
+#             name VARCHAR(150),
+#             name_title VARCHAR(10),
+#             name_first_name VARCHAR(50),
+#             name_last_name VARCHAR(50),
+#             gender VARCHAR(10),
+#             age INTEGER,
+#             no_of_sibling_or_spouse INTEGER,
+#             no_of_parent_or_child INTEGER,
+#             PRIMARY KEY (passenger_id)
+#         );
+#     """
 
-def insert_fact_passenger():
-    insert_query = """
-        INSERT INTO fact_passenger (passenger_id, ticket_class, ticket_detail, fare, cabin_number, port_of_embarked, 
-            passenger_dim_id)
-        SELECT passenger_id,
-               ticket_class,
-               ticket_detail,
-               fare,
-               cabin_number,
-               port_of_embarked,
-               passenger_id
-        FROM staging_titanic
-        ON CONFLICT (passenger_id) DO NOTHING;
-    """
+#     cur.execute(create_query)
+#     conn.commit()
 
-    cur.execute(insert_query)
-    conn.commit()
+# def insert_dim_passenger():
+#     insert_query = """
+#         INSERT INTO dim_passenger (passenger_id, is_survived, name, name_title, name_first_name, name_last_name, 
+#             gender, age, no_of_sibling_or_spouse, no_of_parent_or_child)
+#         SELECT passenger_id,
+#                is_survived,
+#                name,
+#                name_title,
+#                name_first_name,
+#                name_last_name,
+#                gender,
+#                age,
+#                no_of_sibling_or_spouse,
+#                no_of_parent_or_child
+#         FROM staging_titanic
+#         ON CONFLICT (passenger_id) DO NOTHING;
+#     """
 
-def logging(message):
-    time_format = '%Y-%m-%d %H:%M:%S'
-    time_now = datetime.now()
-    current_time = time_now.strftime(time_format)
-    with open(log_file, 'a') as f:
-        f.write(current_time + ': ' + message + '.' + '\n')
+#     cur.execute(insert_query)
+#     conn.commit()
+
+# def create_fact_passenger():
+#     create_query = """
+#         CREATE TABLE IF NOT EXISTS fact_passenger (
+#             passenger_id INTEGER NOT NULL,
+#             ticket_class INTEGER,
+#             ticket_detail VARCHAR(50),
+#             fare NUMERIC,
+#             cabin_number VARCHAR(50),
+#             port_of_embarked VARCHAR(10),
+#             passenger_dim_id INTEGER REFERENCE dim_passenger(passenger_id)
+#             PRIMARY KEY (passenger_id)
+#         );
+#     """
+#     cur.execute(create_query)
+#     conn.commit()
+
+# def insert_fact_passenger():
+#     insert_query = """
+#         INSERT INTO fact_passenger (passenger_id, ticket_class, ticket_detail, fare, cabin_number, port_of_embarked, 
+#             passenger_dim_id)
+#         SELECT passenger_id,
+#                ticket_class,
+#                ticket_detail,
+#                fare,
+#                cabin_number,
+#                port_of_embarked,
+#                passenger_id
+#         FROM staging_titanic
+#         ON CONFLICT (passenger_id) DO NOTHING;
+#     """
+
+#     cur.execute(insert_query)
+#     conn.commit()
+
+# def logging(message):
+#     time_format = '%Y-%m-%d %H:%M:%S'
+#     time_now = datetime.now()
+#     current_time = time_now.strftime(time_format)
+#     with open(log_file, 'a') as f:
+#         f.write(current_time + ': ' + message + '.' + '\n')
