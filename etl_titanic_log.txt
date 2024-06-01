@@ -1,0 +1,12 @@
+2024-06-01 19:15:02: ETL Process Started.
+2024-06-01 19:15:02: Extraction Started.
+2024-06-01 19:15:02: Extraction Completed.
+2024-06-01 19:15:02: Transformation Started.
+2024-06-01 19:15:02: Transformation Completed.
+2024-06-01 19:15:02: Loading - PostgreSQL "staging_titanic" Started.
+2024-06-01 19:15:02: Loading - PostgreSQL "staging_titanic" Completed.
+2024-06-01 19:15:02: Loading - PostgreSQL "dim_passenger" Table Started.
+2024-06-01 19:15:02: Loading - PostgreSQL "dim_passenger" Table Completed.
+2024-06-01 19:15:02: Loading - PostgreSQL "fact_passenger" Table Started.
+2024-06-01 19:15:02: Loading - PostgreSQL "fact_passenger" Table Completed.
+2024-06-01 19:15:02: ETL Process Completed.
